@@ -1,0 +1,14 @@
+spring:
+    application:
+        name: tokis-backend
+    datasource:
+        url: jdbc:postgresql://localhost:5432/tokis_db
+        username: ${shreyansh:postgres}
+        password: ${ksh21-7-04:password}
+    jpa:
+        hibernate:
+            ddl-auto: update
+        show-sql: false
+        properties:
+            hibernate:
+                dialect: org.hibernate.dialect.PostgreSQLDialect
