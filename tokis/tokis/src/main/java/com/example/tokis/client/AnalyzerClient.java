@@ -3,6 +3,7 @@ package com.example.tokis.client;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +22,8 @@ public class AnalyzerClient {
         request.put("path",path);
 
         Map<String,Object> response=restTemplate.postForObject(url,request,Map.class);
-        List<String> fs= (List<String>) response.get("files");
-        return fs;
+        if(response!=null) return (List<String>) response.get("files");
+        return new ArrayList<>();
     }
 
 }
