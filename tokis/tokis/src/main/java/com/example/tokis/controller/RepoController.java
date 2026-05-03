@@ -16,7 +16,12 @@ public class RepoController {
     }
 
     @PostMapping
-    private Repo createRepo(@RequestBody Repo repo){
+    public Repo createRepo(@RequestBody Repo repo){
         return repoService.saveRepo(repo.getName(),repo.getPath());
+    }
+
+    @PostMapping("/ingest")
+    public Repo ingestRepo(@RequestBody Repo repo){
+        return repoService.ingestRepo(repo.getName(),repo.getPath());
     }
 }
