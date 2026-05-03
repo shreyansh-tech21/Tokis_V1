@@ -25,5 +25,4 @@ public class AnalyzerClient {
         if(response!=null) return (List<String>) response.get("files");
         return new ArrayList<>();
     }
-
 }
