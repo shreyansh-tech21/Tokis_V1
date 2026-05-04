@@ -24,7 +24,7 @@ def search_files(query, files):
                         "snippet": snippet
                     })
 
-                    break  # important: avoid duplicate matches per file
+                    break
 
         except Exception:
             continue
