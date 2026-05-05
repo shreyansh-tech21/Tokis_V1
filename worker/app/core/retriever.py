@@ -15,7 +15,7 @@ def search_files(query, files):
 
                 if any(keyword in line_lower for keyword in keywords):
                     snippet = ''.join(
-                        lines[max(0, i-2):min(len(lines), i+3)]
+                        lines[max(0, i-1):min(len(lines), i+3)]
                     )
 
                     results.append({
