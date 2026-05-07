@@ -6,5 +6,6 @@ import java.util.List;
 
 @Data
 public class QueryResponse {
+    private String prompt;
     private List<SnippetDTO> snippets;
 }
