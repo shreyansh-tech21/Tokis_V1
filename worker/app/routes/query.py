@@ -14,6 +14,8 @@ class QueryRequest(BaseModel):
 def query(data: dict):
     query=data.get("query")
     files=data.get("files")
+    for f in files:
+        print(f)
     snippets = search_files(query, files)
     prompt = build_prompt(query, snippets)
     return {"prompt": prompt,"snippets":snippets}

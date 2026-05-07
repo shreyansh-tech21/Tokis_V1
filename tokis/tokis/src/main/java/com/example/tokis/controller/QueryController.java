@@ -41,11 +41,6 @@ public class QueryController {
         String query=request.get("query").toString();
         List<FileNode> files=fileRepository.findByRepoId(repoId);
         List<String> filePaths=files.stream().map(FileNode::getPath).toList();
-        List<SnippetDTO> snippets = workerClient.getSnippets(query, filePaths);
-        
-        QueryResponse response = new QueryResponse();
-        response.setSnippets(snippets);
-        response.setPrompt(query);
-        return response;
+        return workerClient.getQueryResponse(query,filePaths);
     }
 }

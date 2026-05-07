@@ -19,15 +19,19 @@ public class WorkerClient{
         this.restTemplate = restTemplate;
     }
 
-    public List<SnippetDTO> getSnippets(String query,List<String> files){
+    public QueryResponse getQueryResponse(String query, List<String> files){
         String url="http://localhost:8002/query";
         Map<String,Object> request=new HashMap<>();
         request.put("query",query);
         request.put("files",files);
 
         ResponseEntity<QueryResponse> response=restTemplate.postForEntity(url,request,QueryResponse.class);
-        assert response.getBody() != null;
-        return response.getBody().getSnippets();
+        return response.getBody();
+    }
+
+    public List<SnippetDTO> getSnippets(String query,List<String> files){
+        QueryResponse response = getQueryResponse(query, files);
+        return response != null ? response.getSnippets() : null;
 
     }
     
