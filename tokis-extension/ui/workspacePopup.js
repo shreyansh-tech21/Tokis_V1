@@ -88,7 +88,8 @@ Skip
   if (picker) {
     picker.addEventListener("change", (e) => {
       selectedFiles = [...e.target.files];
-      const rootFolder = selectedFiles[0]?.webkitRelativePath?.split("/")[0] || "";
+      const rootFolder =
+        selectedFiles[0]?.webkitRelativePath?.split("/")[0] || "";
       const fileCount = selectedFiles.length;
 
       if (rootFolder) {
@@ -108,8 +109,6 @@ Skip
   if (addRepoButton) {
     addRepoButton.onclick = () => addProject();
   }
-
-  
 
   const skipButton = document.getElementById("skip");
   if (skipButton) {
@@ -131,32 +130,43 @@ async function fetchRepos() {
   });
 }
 
-async function connectRepo() {
-  const select = document.getElementById("repo-select");
-  const repoId = select.value;
+export async function showConnectedBadge(repoName) {
+  const existing = document.getElementById("tokis-badge");
 
-  const repoName = select.options[select.selectedIndex].text;
+  if (existing) {
+    existing.remove();
+  }
 
-  await chrome.storage.local.set({
-    repoId,
-    repoName,
-  });
-  document.getElementById("tokis-workspace").remove();
-
-  showConnectedBadge(repoName);
-}
-
-function showConnectedBadge(repoName) {
   const badge = document.createElement("div");
 
   badge.id = "tokis-badge";
 
-  badge.innerHTML = `...`;
+  badge.innerHTML = `
+
+  <div>
+
+    Tokis Active
+    <br>
+
+    Repo:
+    ${repoName}
+
+    <button id="changeRepo">
+      Change
+    </button>
+
+  </div>
+
+  `;
 
   document.body.appendChild(badge);
 
-  document.getElementById("changeRepo").onclick = () => {
+  const changeBtn = document.getElementById("changeRepo");
+
+  changeBtn.onclick = () => {
     badge.remove();
+
+    chrome.storage.local.remove(["repoId", "repoName"]);
 
     showWorkspacePopup();
   };
@@ -165,11 +175,7 @@ function showConnectedBadge(repoName) {
 async function addProject() {
   const name = document.getElementById("repo-name").value.trim();
 
-  const info = document.getElementById("selected-folder-info");
-
   if (!selectedFiles.length) {
-    info.textContent = "Select a project folder";
-
     return;
   }
 
@@ -177,47 +183,70 @@ async function addProject() {
 
   const projectName = name || rootFolder;
 
-  // try {
-  //   const response = await fetch("http://localhost:8003/register-project", {
-  //     method: "POST",
+  const response = await fetch("http://localhost:8003/register-project", {
+    method: "POST",
 
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
+    headers: {
+      "Content-Type": "application/json",
+    },
 
-  //     body: JSON.stringify({
-  //       projectName,
+    body: JSON.stringify({
+      projectName,
 
-  //       files: selectedFiles.map((file) => ({
-  //         relativePath: file.webkitRelativePath,
-  //       })),
-  //     }),
-  //   });
+      files: selectedFiles.map((file) => ({
+        relativePath: file.webkitRelativePath,
+      })),
+    }),
+  });
 
-    // const result = await response.json();
+  const result = await response.json();
 
-    const repoResponse = await fetch("http://localhost:8080/repos/ingest", {
-      method: "POST",
+  const repo = await new Promise((resolve) => {
+    chrome.runtime.sendMessage(
+      {
+        type: "ADD_REPO",
 
-      headers: {
-        "Content-Type": "application/json",
+        payload: {
+          name: projectName,
+
+          path: result.path,
+        },
       },
 
-      body: JSON.stringify({
-        name: projectName,
+      (response) => {
+        resolve(response);
+      },
+    );
+  });
 
-        path: rootFolder,
-      }),
-    });
+  await chrome.storage.local.set({
+    repoId: repo.id,
 
-    const repo = await repoResponse.json();
+    repoName: repo.name,
+  });
 
-    
+  location.reload();
+}
 
-    await chrome.storage.local.set({
-      repoId: repo.id,
-      repoName: repo.name,
-    });
+export async function connectRepo() {
+  const select = document.getElementById("repo-select");
 
-    location.reload();
+  if (!select.value) {
+    alert("Select repository first");
+
+    return;
+  }
+
+  const repoId = select.value;
+
+  const repoName = select.options[select.selectedIndex].text;
+
+  await chrome.storage.local.set({
+    repoId,
+    repoName,
+  });
+
+  document.getElementById("tokis-workspace").remove();
+
+  showConnectedBadge(repoName);
 }

@@ -1,10 +1,14 @@
 let workspaceModule = null;
 
+import { showWorkspacePopup, showConnectedBadge } from "./ui/workspacePopup.js";
+
 import(chrome.runtime.getURL("ui/workspacePopup.js")).then((module) => {
   workspaceModule = module;
 
   console.log("workspace loaded");
 });
+
+
 
 console.log("Tokis Active");
 
@@ -197,11 +201,10 @@ function injectPrompt(snippets, prompt, textbox) {
 console.log("Tokis extension loaded");
 
 document.addEventListener("keydown", (e) => {
-  console.log("Key pressed:", e.key);
 
   const textbox = document.querySelector('[contenteditable="true"]');
 
-  console.log("Textbox:", textbox.innerText.trim());
+  
 });
 
 setTimeout(async () => {
@@ -211,3 +214,15 @@ setTimeout(async () => {
     workspaceModule.showWorkspacePopup();
   }
 }, 1500);
+
+window.addEventListener("load", async () => {
+  const data = await chrome.storage.local.get(["repoId"]);
+
+  if (!data.repoId || data.repoId === "null" || data.repoId === "undefined") {
+    showWorkspacePopup();
+  } else {
+    const repoData = await chrome.storage.local.get(["repoName"]);
+
+    showConnectedBadge(repoData.repoName);
+  }
+});
