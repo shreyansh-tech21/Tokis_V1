@@ -10,7 +10,7 @@
   "content_scripts": [
     {
       "matches": ["https://chatgpt.com/*", "https://gemini.google.com/*"],
-      "js": ["content.js"],
+      "js": ["content.js","ui/workspacePopup.js"],
       "css": ["style.css"]
     }
   ],

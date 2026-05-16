@@ -1,6 +1,6 @@
 let selectedFiles = [];
 
-export async function showWorkspacePopup() {
+async function showWorkspacePopup() {
   selectedFiles = [];
 
   const repos = await fetchRepos();
@@ -130,7 +130,7 @@ async function fetchRepos() {
   });
 }
 
-export async function showConnectedBadge(repoName) {
+async function showConnectedBadge(repoName) {
   const existing = document.getElementById("tokis-badge");
 
   if (existing) {
@@ -143,19 +143,19 @@ export async function showConnectedBadge(repoName) {
 
   badge.innerHTML = `
 
-  <div>
+    <div>
 
-    Tokis Active
-    <br>
+      Tokis Active
+      <br>
 
-    Repo:
-    ${repoName}
+      Repo:
+      ${repoName}
 
-    <button id="changeRepo">
-      Change
-    </button>
+      <button id="changeRepo">
+        Change
+      </button>
 
-  </div>
+    </div>
 
   `;
 
@@ -163,10 +163,12 @@ export async function showConnectedBadge(repoName) {
 
   const changeBtn = document.getElementById("changeRepo");
 
-  changeBtn.onclick = () => {
-    badge.remove();
+  changeBtn.onclick = async () => {
+    console.log("change clicked");
 
-    chrome.storage.local.remove(["repoId", "repoName"]);
+    await chrome.storage.local.remove(["repoId", "repoName"]);
+
+    badge.remove();
 
     showWorkspacePopup();
   };
@@ -201,6 +203,12 @@ async function addProject() {
 
   const result = await response.json();
 
+  if (result.error) {
+    alert(result.error);
+
+    return;
+  }
+
   const repo = await new Promise((resolve) => {
     chrome.runtime.sendMessage(
       {
@@ -228,7 +236,7 @@ async function addProject() {
   location.reload();
 }
 
-export async function connectRepo() {
+ async function connectRepo() {
   const select = document.getElementById("repo-select");
 
   if (!select.value) {
@@ -248,5 +256,5 @@ export async function connectRepo() {
 
   document.getElementById("tokis-workspace").remove();
 
-  showConnectedBadge(repoName);
+  await showConnectedBadge(repoName);
 }
