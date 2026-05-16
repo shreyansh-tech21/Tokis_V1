@@ -8,6 +8,7 @@ import com.example.tokis.repository.RepoRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class RepoService {
@@ -22,6 +23,10 @@ public class RepoService {
         this.analyzerClient = analyzerClient;
     }
     public Repo saveRepo(String repoName,String repoPath){
+        Optional<Repo> existing= repoRepository.findByPath(repoPath);
+        if(existing.isPresent()){
+            return existing.get();
+        }
         Repo repo=new Repo();
         repo.setName(repoName);
         repo.setPath(repoPath);

@@ -1,0 +1,145 @@
+:root {
+    --bg: #020617;
+    --panel: rgba(12, 18, 40, 0.96);
+    --panel-border: rgba(96, 165, 250, 0.18);
+    --surface: rgba(15, 23, 42, 0.92);
+    --accent: #38bdf8;
+    --accent-strong: #22d3ee;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --shadow: 0 28px 80px rgba(0, 0, 0, 0.3);
+}
+
+#tokis-workspace {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    z-index: 999999;
+    padding: 16px;
+}
+
+.tokis-container {
+    width: min(540px, 100%);
+    background: linear-gradient(180deg, rgba(8, 16, 45, 0.98), rgba(18, 34, 71, 0.96));
+    border: 1px solid var(--panel-border);
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+    color: var(--text);
+    padding: 28px 28px 24px;
+    backdrop-filter: blur(18px);
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.tokis-container h2 {
+    margin: 0 0 18px;
+    font-size: 1.45rem;
+    letter-spacing: -0.03em;
+}
+
+.tokis-container select,
+.tokis-container input,
+.tokis-container #folderPicker {
+    width: min(100%, 520px);
+    margin-top: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(15, 23, 42, 0.9);
+    color: var(--text);
+    padding: 14px 16px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.tokis-container select:hover,
+.tokis-container input:hover,
+.tokis-container #folderPicker:hover {
+    transform: translateY(-1px);
+}
+
+.tokis-container select:focus,
+.tokis-container input:focus,
+.tokis-container #folderPicker:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.12);
+}
+
+.folder-info {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+
+.tokis-container hr {
+    margin: 24px 0;
+    border: none;
+    height: 1px;
+    background: rgba(148, 163, 184, 0.14);
+}
+
+.tokis-container button {
+    margin-top: 14px;
+    width: 100%;
+    border: none;
+    border-radius: 16px;
+    padding: 14px 16px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #020617;
+    background: linear-gradient(135deg, #38bdf8 0%, #22d3ee 100%);
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.tokis-container button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 32px rgba(56, 189, 248, 0.2);
+}
+
+.tokis-container button:active {
+    transform: translateY(0);
+    opacity: 0.96;
+}
+
+#tokis-badge {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    min-width: 220px;
+    padding: 14px 18px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(8, 16, 45, 0.98), rgba(18, 34, 71, 0.98));
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.24);
+    color: var(--text);
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#tokis-badge button {
+    margin-top: 10px;
+    width: 100%;
+    border-radius: 14px;
+    border: 1px solid rgba(56, 189, 248, 0.32);
+    background: transparent;
+    color: var(--accent-strong);
+    padding: 10px 14px;
+    cursor: pointer;
+}
+
+#tokis-badge button:hover {
+    background: rgba(56, 189, 248, 0.12);
+}
+
+@media (max-width: 580px) {
+    .tokis-container {
+        padding: 22px 20px 20px;
+        border-radius: 22px;
+    }
+
+    #tokis-badge {
+        right: 12px;
+        left: 12px;
+    }
+}

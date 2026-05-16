@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Tokis",
+  "version": "1.0",
+
+  "permissions": ["activeTab", "storage"],
+
+  "host_permissions": ["http://localhost:8080/*"],
+
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*", "https://gemini.google.com/*"],
+      "js": ["content.js"],
+      "css": ["style.css"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["ui/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
