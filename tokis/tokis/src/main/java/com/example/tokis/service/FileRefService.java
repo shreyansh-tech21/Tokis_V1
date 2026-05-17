@@ -48,7 +48,7 @@ public class FileRefService {
         List<SnippetDTO> results = new ArrayList<>();
 
         for (String ref : references) {
-            findMatch(repoFiles, normalizeRef(ref, repoRoot), repoRoot).ifPresent(file -> {
+            findMatch(repoFiles, ref, repoRoot).ifPresent(file -> {
                 String absolutePath = normalizePath(file.getPath());
                 SnippetDTO dto = new SnippetDTO();
                 dto.setFile(absolutePath);
@@ -63,7 +63,7 @@ public class FileRefService {
     }
 
     private Optional<FileNode> findMatch(List<FileNode> files, String ref, String repoRoot) {
-        String normalized = normalizeRef(ref);
+        String normalized = normalizeRef(ref, repoRoot);
         if (normalized.isEmpty()) {
             return Optional.empty();
         }
