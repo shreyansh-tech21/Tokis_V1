@@ -230,12 +230,29 @@ Tokis_V1/
 
 ---
 
-## Roadmap
+## Future roadmap
 
-- [ ] Terminal capture (`tokis-run`) with approval gate
-- [ ] Team-wide mask policies and audit log
-- [ ] IDE extension (VS Code) sharing the same protocol
-- [ ] Optional cloud sync for repo index (enterprise deployment)
+Tokis today is intentionally focused: connect a repo, inject with masking, review, and approve writes. Below is where the product is headed—not a commitment timeline, but the direction that would make it competitive with IDE-native AI tools while keeping the privacy and approval model.
+
+### Planned direction (your vision)
+
+| Initiative | What it would mean |
+|------------|-------------------|
+| **Cursor-style conversation loop** | Multi-turn workflow inside Tokis: each model reply can trigger follow-up inject, refined context, or partial apply without starting over. Session state would tie together chat turns, active mask sets, and “what changed on disk since turn N.” |
+| **Contextual dependency graph** | Index symbols (functions, classes, imports) and edges (calls, extends, imports) across files. UI to explore “what depends on this?” and auto-select related files/snippets for inject—so context is structural, not only keyword search. |
+
+### Additional directions worth considering
+
+These are suggestions that fit the same architecture; none are built yet.
+
+- **Smarter context selection** — When you `@` a symbol or file, Tokis proposes a *bundle* (callers, callees, tests, config) ranked by relevance, with one-click add to the inject preview.
+- **Symbol-aware masking** — Mask a module path or package name once; demask consistently in paths, imports, and string literals on review (extends today’s `MASK1` path tokens).
+- **Diff-first review** — Show unified diffs per file before apply, not only full-file previews—easier to audit model output at scale.
+- **Terminal bridge (`tokis-run`)** — Propose shell commands in chat; run locally only after explicit approval (pairs well with path masking in logs).
+- **IDE sidebar (VS Code / Cursor)** — Same protocol (`.tokis/protocol.md`, `tokis-edit`, mask vault) without relying on the browser composer.
+- **Team policy layer** — Shared rules for what must be masked, optional audit log of inject/apply events for compliance reviews.
+
+If you are evaluating this for a role: the near-term bet is **trust + structure** (mask, approve, real paths)—the longer-term bet is **context quality** (graph + loop) so developers do not have to manually guess which files belong in the prompt.
 
 ---
 
