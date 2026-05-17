@@ -249,7 +249,7 @@ If you are evaluating this for a role: the near-term bet is **trust + structure*
 
 **Shreyansh Karamtot**
 
-- **Demo:** [YouTube walkthrough](https://youtu.be/REPLACE_WITH_YOUR_VIDEO_ID) *(update link after upload)*
+- **Demo:** [YouTube walkthrough](https://youtu.be/hiu95gZ69_w)
 - **Focus:** Trust, privacy, and developer control when using public LLMs on private codebases—the same constraints teams at scale care about.
 
 ---
