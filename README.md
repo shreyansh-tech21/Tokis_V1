@@ -241,7 +241,7 @@ Tokis_V1/
 
 ## Author
 
-**Karam** — built for safe, practical AI-assisted development workflows.
+**Shreyansh Karamtot** — built for safe, practical AI-assisted development workflows.
 
 If you're reviewing this for a role: the focus is **trust, privacy, and developer control** when using public LLMs on private codebases—the same constraints teams at scale care about.
 
