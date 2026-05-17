@@ -54,7 +54,10 @@ function basename(filePath) {
   return parts[parts.length - 1] || filePath;
 }
 
-function formatRepoPath(filePath, repoRoot) {
+function formatRepoPath(filePath, repoRoot, repoPaths) {
+  if (typeof normalizeRepoRelativePath === "function" && repoRoot) {
+    return normalizeRepoRelativePath(filePath, repoRoot, repoPaths);
+  }
   if (typeof toRelativePath === "function" && repoRoot) {
     return toRelativePath(filePath, repoRoot);
   }
@@ -346,7 +349,8 @@ function showContextPopup(snippets, prompt, textbox, error, options = {}) {
 
       const repoData = await chrome.storage.local.get(["repoPath"]);
       const root = repoData.repoPath || repoPath;
-      const refs = selected.map((s) => formatRepoPath(s.file, root));
+      const indexedPaths = await getRepoFilePaths();
+      const refs = selected.map((s) => formatRepoPath(s.file, root, indexedPaths));
 
       const resolved = await resolveFileReferences(refs);
       if (resolved.error) {
@@ -363,7 +367,7 @@ function showContextPopup(snippets, prompt, textbox, error, options = {}) {
       }
 
       const filled = selected.map((s) => {
-        const rel = formatRepoPath(s.file, root);
+        const rel = formatRepoPath(s.file, root, indexedPaths);
         const resolved = resolvedByPath.get(rel) || resolvedByPath.get(s.file);
         if (resolved) {
           return {

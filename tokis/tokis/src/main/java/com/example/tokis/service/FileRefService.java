@@ -48,7 +48,7 @@ public class FileRefService {
         List<SnippetDTO> results = new ArrayList<>();
 
         for (String ref : references) {
-            findMatch(repoFiles, ref, repoRoot).ifPresent(file -> {
+            findMatch(repoFiles, normalizeRef(ref, repoRoot), repoRoot).ifPresent(file -> {
                 String absolutePath = normalizePath(file.getPath());
                 SnippetDTO dto = new SnippetDTO();
                 dto.setFile(absolutePath);
@@ -153,14 +153,28 @@ public class FileRefService {
         return norm;
     }
 
-    private String normalizeRef(String ref) {
+    private String normalizeRef(String ref, String repoRoot) {
         if (ref == null) {
             return "";
         }
-        return ref.trim()
+        String rel = ref.trim()
                 .replace('\\', '/')
                 .replaceAll("^[@/]+", "")
                 .replaceAll("^\\./+", "");
+
+        String root = normalizePath(repoRoot).replaceAll("/$", "");
+        if (!root.isEmpty()) {
+            String prefix = root.toLowerCase(Locale.ROOT) + "/";
+            if (rel.toLowerCase(Locale.ROOT).startsWith(prefix)) {
+                rel = rel.substring(root.length() + 1);
+            }
+        }
+
+        String rootName = basename(root);
+        while (!rootName.isEmpty() && rel.toLowerCase(Locale.ROOT).startsWith(rootName.toLowerCase(Locale.ROOT) + "/")) {
+            rel = rel.substring(rootName.length() + 1);
+        }
+        return rel;
     }
 
     private String normalizePath(String path) {

@@ -86,16 +86,63 @@ async function saveTokisProtocol(content) {
   });
 }
 
+function pathBasename(filePath) {
+  const parts = String(filePath).replace(/\\/g, "/").split("/").filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : "";
+}
+
 function toRelativePath(filePath, repoRoot) {
-  const norm = String(filePath).replace(/\\/g, "/");
+  const norm = String(filePath || "").replace(/\\/g, "/").trim();
   const root = String(repoRoot || "")
     .replace(/\\/g, "/")
     .replace(/\/$/, "");
-  if (!root) return norm;
+  if (!root) return norm.replace(/^\.+\//, "").replace(/^\/+/, "");
   if (norm.toLowerCase().startsWith(root.toLowerCase() + "/")) {
     return norm.slice(root.length + 1);
   }
-  return norm;
+  return norm.replace(/^\.+\//, "").replace(/^\/+/, "");
+}
+
+function buildRepoPathIndex(repoPaths, repoRoot) {
+  const index = new Set();
+  for (const p of repoPaths || []) {
+    const rel = toRelativePath(p, repoRoot).replace(/^\.+\//, "").replace(/^\/+/, "");
+    if (rel) index.add(rel.toLowerCase());
+  }
+  return index;
+}
+
+function repoPathExists(rel, repoRoot, repoPaths) {
+  if (!rel) return false;
+  const cleaned = String(rel).replace(/^\.+\//, "").replace(/^\/+/, "");
+  if (!cleaned) return false;
+  const index = buildRepoPathIndex(repoPaths, repoRoot);
+  if (index.size) return index.has(cleaned.toLowerCase());
+  return false;
+}
+
+/** Strip repo-root prefix, duplicate repo folder names, and mistaken leading segments. */
+function normalizeRepoRelativePath(filePath, repoRoot, repoPaths = []) {
+  let rel = toRelativePath(filePath, repoRoot);
+  rel = rel.replace(/^\.+\//, "").replace(/^\/+/, "");
+  if (!rel || !repoRoot) return rel;
+
+  if (repoPathExists(rel, repoRoot, repoPaths)) return rel;
+
+  const rootName = pathBasename(String(repoRoot).replace(/\/$/, ""));
+  while (rootName && rel.toLowerCase().startsWith(`${rootName.toLowerCase()}/`)) {
+    rel = rel.slice(rootName.length + 1);
+    if (repoPathExists(rel, repoRoot, repoPaths)) return rel;
+  }
+
+  const parts = rel.split("/").filter(Boolean);
+  while (parts.length > 1) {
+    const shorter = parts.slice(1).join("/");
+    if (repoPathExists(shorter, repoRoot, repoPaths)) return shorter;
+    parts.shift();
+  }
+
+  return rel;
 }
 
 function snippetDisplayPath(snippet, repoRoot) {
@@ -356,8 +403,11 @@ async function applyTokisEdits(edits) {
     toApply = resolved.edits;
   }
 
+  const repoPaths =
+    typeof getRepoFilePaths === "function" ? await getRepoFilePaths() : [];
+
   const normalized = toApply.map((e) => {
-    const rel = toRelativePath(e.relativePath, repoPath);
+    const rel = normalizeRepoRelativePath(e.relativePath, repoPath, repoPaths);
     return { relativePath: rel || e.relativePath, content: e.content };
   });
 
@@ -509,6 +559,8 @@ window.showProtocolEditor = showProtocolEditor;
 window.showReviewSuggestionsModal = showReviewSuggestionsModal;
 window.buildPromptWithTokis = buildPromptWithTokis;
 window.buildFileToChatBlock = buildFileToChatBlock;
+window.toRelativePath = toRelativePath;
+window.normalizeRepoRelativePath = normalizeRepoRelativePath;
 window.showPreviewEditorModal = showPreviewEditorModal;
 window.setFabStatus = setFabStatus;
 window.truncateForChat = truncateForChat;

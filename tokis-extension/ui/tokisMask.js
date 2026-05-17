@@ -147,8 +147,11 @@ function resolveEditRelativePath(rawPath, tokenMap, repoPaths, repoRoot, pathAli
 }
 
 function matchPathInRepo(refPath, repoPaths, repoRoot, options = {}) {
-  const normalized = normalizeMaskPath(refPath);
+  let normalized = normalizeMaskPath(refPath);
   if (!normalized) return null;
+  if (repoRoot && typeof normalizeRepoRelativePath === "function") {
+    normalized = normalizeRepoRelativePath(normalized, repoRoot, repoPaths) || normalized;
+  }
 
   const normLower = normalized.toLowerCase();
   const entries = (repoPaths || []).map((p) => ({
@@ -258,7 +261,11 @@ async function resolveEditsForApply(edits, options = {}) {
       continue;
     }
 
-    resolved.push({ relativePath: rel, content });
+    const finalRel =
+      typeof normalizeRepoRelativePath === "function"
+        ? normalizeRepoRelativePath(rel, repoPath, repoPaths)
+        : rel;
+    resolved.push({ relativePath: finalRel, content });
   }
 
   return { edits: resolved, errors, tokenMap };
