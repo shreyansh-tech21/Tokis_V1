@@ -15,3 +15,13 @@ ENV/
 # Other common ignores
 .env
 *.log
+
+# Java
+target/
+*.class
+
+# IDE
+.idea/
+
+# Demo build output
+TESTING.md/

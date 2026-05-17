@@ -6,14 +6,12 @@ import com.example.tokis.model.QueryResponse;
 import com.example.tokis.model.SnippetDTO;
 import com.example.tokis.repository.FileRepository;
 import com.example.tokis.service.QueryService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/query")
 public class QueryController {

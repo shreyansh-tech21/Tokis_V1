@@ -5,12 +5,17 @@
 
   "permissions": ["activeTab", "storage"],
 
-  "host_permissions": ["http://localhost:8080/*","http://localhost:8003/*"],
+  "host_permissions": [
+    "http://localhost:8080/*",
+    "http://127.0.0.1:8080/*",
+    "http://localhost:8003/*",
+    "http://127.0.0.1:8003/*"
+  ],
 
   "content_scripts": [
     {
       "matches": ["https://chatgpt.com/*", "https://gemini.google.com/*"],
-      "js": ["content.js","ui/workspacePopup.js"],
+      "js": ["ui/tokisMask.js", "ui/tokisM4.js", "ui/workspacePopup.js", "content.js"],
       "css": ["style.css"]
     }
   ],

@@ -1,50 +1,27 @@
-from fastapi import APIRouter
 import os
-from pathlib import Path
+
+from fastapi import APIRouter
+
+from core.folder_picker import pick_project_folder
 
 router = APIRouter()
 
+
 @router.post("/register-project")
-def register(data: dict):
+def register(data: dict | None = None):
+    data = data or {}
+    folder = pick_project_folder()
 
-    project = data["projectName"]
+    if not folder:
+        return {"error": "No folder selected"}
 
-    search_dirs = [
+    if not os.path.isdir(folder):
+        return {"error": "Invalid folder"}
 
-        str(Path.home() / "Desktop"),
-        str(Path.home() / "Documents"),
-        str(Path.home() / "Downloads"),
-        str(Path.home() / "projects"),
-        str(Path.home() / "source"),
-    ]
-
-    ignored = {
-        "node_modules",
-        ".git",
-        "target",
-        "dist",
-        "build",
-        "__pycache__"
-    }
-
-    for base in search_dirs:
-
-        if not os.path.exists(base):
-            continue
-
-        for root, dirs, files in os.walk(base):
-
-            dirs[:] = [
-                d for d in dirs
-                if d not in ignored
-            ]
-
-            if os.path.basename(root) == project:
-
-                return {
-                    "path": root
-                }
+    folder_name = os.path.basename(os.path.normpath(folder))
+    project_name = (data.get("projectName") or "").strip() or folder_name
 
     return {
-        "error":"project not found"
+        "path": folder,
+        "projectName": project_name,
     }
