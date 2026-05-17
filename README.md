@@ -14,7 +14,7 @@ Built for teams that need LLM productivity without giving up control, path priva
 
 ## Demo
 
-**[Watch the demo on YouTube →](https://youtu.be/REPLACE_WITH_YOUR_VIDEO_ID)** *(replace `REPLACE_WITH_YOUR_VIDEO_ID` with your video ID after upload)*
+**[Watch the demo on YouTube →](https://youtu.be/hiu95gZ69_w)** 
 
 A short walkthrough of the full workflow on the included `tokis-test` sample repo:
 
