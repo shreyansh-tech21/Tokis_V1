@@ -115,21 +115,24 @@ function resolveEditRelativePath(rawPath, tokenMap, repoPaths, repoRoot, pathAli
   path = normalizeMaskPath(path);
 
   if (path && !hasMaskPlaceholder(path)) {
+    const direct = matchPathInRepo(path, repoPaths, repoRoot);
+    if (direct) return direct;
+    if (!path.includes("/")) {
+      return null;
+    }
     return path;
   }
 
   const aliasBase = basenameFromPath(rawPath).replace(/MASK\d+/gi, "").toLowerCase();
-  if (aliasBase && pathAliases[aliasBase]) {
+  if (aliasBase && pathAliases[aliasBase] && typeof pathAliases[aliasBase] === "string") {
     return pathAliases[aliasBase];
   }
 
-  let attempt = String(rawPath || "");
-  for (const [token, value] of Object.entries(tokenMap)) {
-    attempt = attempt.split(token).join(value);
-  }
+  let attempt = demaskText(normalizeMaskPath(rawPath), tokenMap);
   attempt = normalizeMaskPath(attempt);
   if (attempt && !hasMaskPlaceholder(attempt)) {
-    return attempt;
+    const matched = matchPathInRepo(attempt, repoPaths, repoRoot);
+    if (matched) return matched;
   }
 
   const corruptBase = basenameFromPath(rawPath);
@@ -140,19 +143,47 @@ function resolveEditRelativePath(rawPath, tokenMap, repoPaths, repoRoot, pathAli
   stripped = stripped.replace(/MASK\d+/gi, "").trim();
   if (!stripped) return null;
 
-  const normalizedRepo = (repoPaths || []).map((p) => ({
+  return matchPathInRepo(stripped, repoPaths, repoRoot, { basenameOnly: true });
+}
+
+function matchPathInRepo(refPath, repoPaths, repoRoot, options = {}) {
+  const normalized = normalizeMaskPath(refPath);
+  if (!normalized) return null;
+
+  const normLower = normalized.toLowerCase();
+  const entries = (repoPaths || []).map((p) => ({
     full: p,
     rel: toMaskRelativePath(p, repoRoot),
-    base: basenameFromPath(p).toLowerCase(),
   }));
 
-  const exact = normalizedRepo.filter((e) => e.base === stripped.toLowerCase());
-  if (exact.length === 1) return exact[0].rel || exact[0].full;
+  const candidates = entries.filter((e) => {
+    const relLower = e.rel.toLowerCase();
+    const fullLower = String(e.full).replace(/\\/g, "/").toLowerCase();
+    return (
+      relLower === normLower ||
+      fullLower.endsWith("/" + normLower) ||
+      relLower.endsWith("/" + normLower)
+    );
+  });
 
-  const partial = normalizedRepo.filter(
-    (e) => e.base.includes(stripped.toLowerCase()) || stripped.toLowerCase().includes(e.base),
-  );
-  if (partial.length === 1) return partial[0].rel || partial[0].full;
+  if (candidates.length === 1) return candidates[0].rel;
+  if (candidates.length > 1) {
+    if (!normalized.includes("/")) {
+      return null;
+    }
+    const exact = candidates.filter((e) => e.rel.toLowerCase() === normLower);
+    if (exact.length === 1) return exact[0].rel;
+    const suffix = candidates.filter((e) => e.rel.toLowerCase().endsWith("/" + normLower));
+    if (suffix.length === 1) return suffix[0].rel;
+    return null;
+  }
+
+  if (options.basenameOnly || !normalized.includes("/")) {
+    const base = basenameFromPath(normalized).toLowerCase();
+    const baseMatches = entries.filter((e) => basenameFromPath(e.rel).toLowerCase() === base);
+    if (baseMatches.length === 1) return baseMatches[0].rel;
+    return null;
+  }
 
   return null;
 }
@@ -214,7 +245,7 @@ async function resolveEditsForApply(edits, options = {}) {
     if (!rel || hasMaskPlaceholder(rel)) {
       errors.push({
         rawPath: edit.relativePath,
-        message: `Could not resolve file path "${edit.relativePath}". Use real paths in tokis-edit (e.g. src/Calculator.java), not MASK in the path.`,
+        message: `Could not resolve file path "${edit.relativePath}". Use the full relative path from context (e.g. src/helper.py), not a bare filename when duplicates exist.`,
       });
       continue;
     }
@@ -246,8 +277,15 @@ function maskFileHeaderPath(text, start, end, vault) {
   vault.tokens[token] = innerPath;
   vault.pathAliases = vault.pathAliases || {};
   const base = basenameFromPath(innerPath);
-  if (base) {
-    vault.pathAliases[base.toLowerCase()] = normalizeMaskPath(innerPath);
+  const relPath = normalizeMaskPath(innerPath);
+  if (base && relPath) {
+    const key = base.toLowerCase();
+    const prev = vault.pathAliases[key];
+    if (!prev) {
+      vault.pathAliases[key] = relPath;
+    } else if (prev !== relPath) {
+      vault.pathAliases[key] = null;
+    }
   }
   const newLine = `---${token}---`;
   const newText = text.slice(0, lineStart) + newLine + text.slice(lineEndPos);

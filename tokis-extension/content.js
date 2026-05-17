@@ -54,6 +54,13 @@ function basename(filePath) {
   return parts[parts.length - 1] || filePath;
 }
 
+function formatRepoPath(filePath, repoRoot) {
+  if (typeof toRelativePath === "function" && repoRoot) {
+    return toRelativePath(filePath, repoRoot);
+  }
+  return String(filePath).replace(/\\/g, "/");
+}
+
 async function cacheRepoFiles(repoId) {
   if (!repoId) return;
 
@@ -198,7 +205,7 @@ async function openInjectPromptPicker() {
     return;
   }
 
-  const repoData = await chrome.storage.local.get(["repoId"]);
+  const repoData = await chrome.storage.local.get(["repoId", "repoPath"]);
   if (!repoData.repoId) {
     alert("Connect a repository first.");
     return;
@@ -225,10 +232,12 @@ async function openInjectPromptPicker() {
     precheckedPaths,
     fileRefs,
     manualMode: true,
+    repoPath: repoData.repoPath || "",
   });
 }
 
 window.openInjectPromptPicker = openInjectPromptPicker;
+window.showContextPopup = showContextPopup;
 
 function isCodingPrompt(prompt) {
   const keywords = [
@@ -266,6 +275,8 @@ function showContextPopup(snippets, prompt, textbox, error, options = {}) {
   const existing = document.getElementById("tokis-popup");
   if (existing) existing.remove();
 
+  const repoPath = options.repoPath || "";
+  const injectFilesOnly = Boolean(options.injectFilesOnly);
   const precheckedPaths = new Set(options.precheckedPaths || []);
   const fileRefs = options.fileRefs || [];
   const refHint =
@@ -286,7 +297,7 @@ function showContextPopup(snippets, prompt, textbox, error, options = {}) {
           .map((s, i) => {
             const isRef = precheckedPaths.has(s.file);
             const checked = precheckedPaths.has(s.file) ? "checked" : "";
-            const label = basename(s.file);
+            const label = formatRepoPath(s.file, repoPath);
             return `
 <label class="tokis-file-item${isRef ? " tokis-file-ref" : ""}" title="${escapeHtml(s.file)}">
   <input type="checkbox" class="tokis-file-checkbox" ${checked} value="${i}" />
@@ -298,8 +309,8 @@ function showContextPopup(snippets, prompt, textbox, error, options = {}) {
 
   popup.innerHTML = `
 <div class="tokis-container tokis-context-popup">
-  <h2>Tokis Context</h2>
-  <p class="tokis-context-hint">Select files, then preview before injecting into chat.</p>
+  <h2>${injectFilesOnly ? "Inject file" : "Tokis Context"}</h2>
+  <p class="tokis-context-hint">${injectFilesOnly ? "Select repo files (paths shown relative to project root), then preview." : "Select files, then preview before injecting into chat."}</p>
   ${refHint}
   ${errorBlock}
   ${snippetList}
@@ -333,7 +344,11 @@ function showContextPopup(snippets, prompt, textbox, error, options = {}) {
       injectBtn.disabled = true;
       injectBtn.textContent = "Loading…";
 
-      const resolved = await resolveFileReferences(selected.map((s) => s.file));
+      const repoData = await chrome.storage.local.get(["repoPath"]);
+      const root = repoData.repoPath || repoPath;
+      const refs = selected.map((s) => formatRepoPath(s.file, root));
+
+      const resolved = await resolveFileReferences(refs);
       if (resolved.error) {
         alert(resolved.error);
         injectBtn.disabled = false;
@@ -341,19 +356,51 @@ function showContextPopup(snippets, prompt, textbox, error, options = {}) {
         return;
       }
 
-      const resolvedByPath = new Map(resolved.snippets.map((s) => [s.file, s]));
-      const filled = selected.map((s) => resolvedByPath.get(s.file) || s);
+      const resolvedByPath = new Map();
+      for (const sn of resolved.snippets || []) {
+        resolvedByPath.set(sn.file, sn);
+        if (sn.relativePath) resolvedByPath.set(sn.relativePath, sn);
+      }
+
+      const filled = selected.map((s) => {
+        const rel = formatRepoPath(s.file, root);
+        const resolved = resolvedByPath.get(rel) || resolvedByPath.get(s.file);
+        if (resolved) {
+          return {
+            ...s,
+            ...resolved,
+            file: s.file,
+            relativePath: resolved.relativePath || rel,
+          };
+        }
+        return { ...s, relativePath: rel };
+      });
 
       popup.remove();
 
-      const draft =
-        typeof buildPromptWithTokis === "function"
-          ? buildPromptWithTokis(prompt, filled)
-          : buildPrompt(prompt, filled);
+      let draft;
+      if (injectFilesOnly) {
+        draft = filled
+          .map((s) => {
+            const pathLabel = s.relativePath || formatRepoPath(s.file, root);
+            const content = (s.snippet || "").trim();
+            return typeof buildFileToChatBlock === "function"
+              ? buildFileToChatBlock(pathLabel, content, root)
+              : `\n---${pathLabel}---\n${content}\n`;
+          })
+          .join("")
+          .trim();
+      } else {
+        draft =
+          typeof buildPromptWithTokis === "function"
+            ? buildPromptWithTokis(prompt, filled, root)
+            : await buildPrompt(prompt, filled);
+      }
 
+      const previewTitle = injectFilesOnly ? "Inject file" : "Preview inject";
       if (typeof showMaskPreviewModal === "function") {
         showMaskPreviewModal({
-          title: "Preview inject",
+          title: previewTitle,
           hint: "Select sensitive text → Mask selection. ChatGPT gets MASK1, MASK2; Review restores real values.",
           content: draft,
           confirmLabel: "Inject into chat",
@@ -361,7 +408,7 @@ function showContextPopup(snippets, prompt, textbox, error, options = {}) {
         });
       } else if (typeof showPreviewEditorModal === "function") {
         showPreviewEditorModal({
-          title: "Preview inject",
+          title: previewTitle,
           hint: "Edit the message, then inject into the chat composer.",
           content: draft,
           confirmLabel: "Inject into chat",
@@ -376,9 +423,10 @@ function showContextPopup(snippets, prompt, textbox, error, options = {}) {
   }
 }
 
-function buildPrompt(prompt, snippets) {
+async function buildPrompt(prompt, snippets) {
   if (typeof buildPromptWithTokis === "function") {
-    return buildPromptWithTokis(prompt, snippets);
+    const { repoPath } = await chrome.storage.local.get(["repoPath"]);
+    return buildPromptWithTokis(prompt, snippets, repoPath);
   }
 
   let finalPrompt = `Task:\n${prompt.trim()}\n\nRelevant Context:\n`;

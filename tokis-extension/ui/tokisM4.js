@@ -88,26 +88,39 @@ async function saveTokisProtocol(content) {
 
 function toRelativePath(filePath, repoRoot) {
   const norm = String(filePath).replace(/\\/g, "/");
-  const root = String(repoRoot).replace(/\\/g, "/").replace(/\/$/, "");
+  const root = String(repoRoot || "")
+    .replace(/\\/g, "/")
+    .replace(/\/$/, "");
+  if (!root) return norm;
   if (norm.toLowerCase().startsWith(root.toLowerCase() + "/")) {
     return norm.slice(root.length + 1);
   }
   return norm;
 }
 
-function buildPromptWithTokis(task, snippets) {
+function snippetDisplayPath(snippet, repoRoot) {
+  if (snippet?.relativePath) return snippet.relativePath;
+  return toRelativePath(snippet?.file, repoRoot) || snippet?.file || "";
+}
+
+function buildPromptWithTokis(task, snippets, repoRoot) {
   let body = `Task:\n${(task || "").trim()}\n\nRelevant Context:\n`;
   snippets.forEach((s) => {
     const capped = truncateForChat((s.snippet || "").trim(), 8000);
-    body += `\n---${s.file}---\n${capped.text}\n`;
+    const pathLabel = snippetDisplayPath(s, repoRoot);
+    body += `\n---${pathLabel}---\n${capped.text}\n`;
   });
-  body += `\nTokis: Follow \`.tokis/protocol.md\`. For each changed file use \`\`\`tokis-edit:relative/path\`\`\` with real repo paths (never MASK in the path line). MASK1, MASK2 may appear only inside file content if needed.`;
+  body += `\nTokis: Follow \`.tokis/protocol.md\`. For each changed file use \`\`\`tokis-edit:relative/path\`\`\` with the full relative path shown above (e.g. src/helper.py, not helper.py alone). Never MASK in the path line. MASK1, MASK2 may appear only inside file content if needed.`;
   return truncateForChat(body, TOKIS_CHAT_INJECT_MAX).text;
 }
 
-function buildFileToChatBlock(filePath, content) {
+function buildFileToChatBlock(filePath, content, repoRoot) {
   const capped = truncateForChat(content, TOKIS_CHAT_INJECT_MAX);
-  return `\n---${filePath}---\n${capped.text}\n`;
+  const pathLabel =
+    repoRoot && !String(filePath).includes("---")
+      ? toRelativePath(filePath, repoRoot) || filePath
+      : filePath;
+  return `\n---${pathLabel}---\n${capped.text}\n`;
 }
 
 function appendTextToChatComposer(textBox, content) {
@@ -509,6 +522,23 @@ async function openInjectFilePicker() {
     alert("No chat input found.");
     return;
   }
+
+  const { repoId, repoPath } = await getRepoContext();
+  if (repoId && typeof getRepoFilePaths === "function") {
+    const paths = await getRepoFilePaths();
+    if (paths.length) {
+      const snippets = paths.map((path) => ({ file: path, snippet: "", line: 1 }));
+      if (typeof showContextPopup === "function") {
+        showContextPopup(snippets, "", textBox, null, {
+          manualMode: true,
+          repoPath: repoPath || "",
+          injectFilesOnly: true,
+        });
+        return;
+      }
+    }
+  }
+
   await injectLocalFilesIntoChat(textBox);
 }
 window.openInjectFilePicker = openInjectFilePicker;
@@ -551,14 +581,19 @@ async function openFileToChatPicker() {
   document.body.appendChild(popup);
   const list = popup.querySelector("#tokis-ftc-list");
   if (list) {
+    const { repoPath } = await getRepoContext();
     list.innerHTML = paths
-      .map(
-        (p, i) => `
+      .map((p, i) => {
+        const label =
+          repoPath && typeof toRelativePath === "function"
+            ? toRelativePath(p, repoPath)
+            : tokisBasename(p);
+        return `
 <label class="tokis-file-item" title="${tokisEscapeHtml(p)}">
   <input type="checkbox" class="tokis-ftc-checkbox" value="${i}" />
-  <span class="tokis-file-name">${tokisEscapeHtml(tokisBasename(p))}</span>
-</label>`,
-      )
+  <span class="tokis-file-name">${tokisEscapeHtml(label)}</span>
+</label>`;
+      })
       .join("");
   }
 
@@ -575,12 +610,13 @@ async function openFileToChatPicker() {
     let anyTruncated = false;
 
     for (const filePath of selected) {
-      const read = await agentPost("/files/read", { repoRoot: repoPath, path: filePath });
+      const rel = toRelativePath(filePath, repoPath) || filePath;
+      const read = await agentPost("/files/read", { repoRoot: repoPath, path: rel });
       if (read.error) {
-        alert(`${filePath}: ${read.error}`);
+        alert(`${rel}: ${read.error}`);
         return;
       }
-      combined += buildFileToChatBlock(filePath, read.content);
+      combined += buildFileToChatBlock(rel, read.content, repoPath);
       if (read.truncated) anyTruncated = true;
     }
 

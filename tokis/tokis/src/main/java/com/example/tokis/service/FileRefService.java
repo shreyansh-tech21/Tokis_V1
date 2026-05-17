@@ -1,8 +1,10 @@
 package com.example.tokis.service;
 
 import com.example.tokis.entity.FileNode;
+import com.example.tokis.entity.Repo;
 import com.example.tokis.model.SnippetDTO;
 import com.example.tokis.repository.FileRepository;
+import com.example.tokis.repository.RepoRepository;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -20,9 +22,11 @@ public class FileRefService {
     private static final int MAX_BYTES = 512_000;
 
     private final FileRepository fileRepository;
+    private final RepoRepository repoRepository;
 
-    public FileRefService(FileRepository fileRepository) {
+    public FileRefService(FileRepository fileRepository, RepoRepository repoRepository) {
         this.fileRepository = fileRepository;
+        this.repoRepository = repoRepository;
     }
 
     public List<String> listPaths(Long repoId) {
@@ -36,15 +40,21 @@ public class FileRefService {
             return List.of();
         }
 
+        Repo repo = repoRepository.findById(repoId)
+                .orElseThrow(() -> new RuntimeException("Repo not found"));
+        String repoRoot = normalizePath(repo.getPath());
+
         List<FileNode> repoFiles = fileRepository.findByRepoId(repoId);
         List<SnippetDTO> results = new ArrayList<>();
 
         for (String ref : references) {
-            findMatch(repoFiles, ref).ifPresent(file -> {
+            findMatch(repoFiles, ref, repoRoot).ifPresent(file -> {
+                String absolutePath = normalizePath(file.getPath());
                 SnippetDTO dto = new SnippetDTO();
-                dto.setFile(file.getPath());
+                dto.setFile(absolutePath);
+                dto.setRelativePath(toRelativePath(absolutePath, repoRoot));
                 dto.setLine(1L);
-                dto.setSnippet(readContent(file.getPath()));
+                dto.setSnippet(readContent(absolutePath));
                 results.add(dto);
             });
         }
@@ -52,7 +62,7 @@ public class FileRefService {
         return results;
     }
 
-    private Optional<FileNode> findMatch(List<FileNode> files, String ref) {
+    private Optional<FileNode> findMatch(List<FileNode> files, String ref, String repoRoot) {
         String normalized = normalizeRef(ref);
         if (normalized.isEmpty()) {
             return Optional.empty();
@@ -60,27 +70,87 @@ public class FileRefService {
 
         String normLower = normalized.toLowerCase(Locale.ROOT);
 
+        List<FileNode> candidates = new ArrayList<>();
         for (FileNode file : files) {
             String path = normalizePath(file.getPath());
-            if (path.equalsIgnoreCase(normalized) || path.toLowerCase(Locale.ROOT).endsWith("/" + normLower)) {
-                return Optional.of(file);
+            String rel = toRelativePath(path, repoRoot);
+            String relLower = rel.toLowerCase(Locale.ROOT);
+            String pathLower = path.toLowerCase(Locale.ROOT);
+
+            if (path.equalsIgnoreCase(normalized)
+                    || rel.equalsIgnoreCase(normalized)
+                    || pathLower.endsWith("/" + normLower)
+                    || relLower.equals(normLower)) {
+                candidates.add(file);
             }
         }
 
+        if (candidates.size() == 1) {
+            return Optional.of(candidates.get(0));
+        }
+
+        if (candidates.size() > 1) {
+            if (!normLower.contains("/")) {
+                return Optional.empty();
+            }
+            Optional<FileNode> exact = candidates.stream()
+                    .filter(f -> toRelativePath(f.getPath(), repoRoot).equalsIgnoreCase(normalized))
+                    .findFirst();
+            if (exact.isPresent()) {
+                return exact;
+            }
+            List<FileNode> suffixOnly = candidates.stream()
+                    .filter(f -> toRelativePath(f.getPath(), repoRoot).toLowerCase(Locale.ROOT)
+                            .endsWith("/" + normLower))
+                    .toList();
+            if (suffixOnly.size() == 1) {
+                return Optional.of(suffixOnly.get(0));
+            }
+            return Optional.empty();
+        }
+
+        List<FileNode> basenameMatches = new ArrayList<>();
         for (FileNode file : files) {
             if (basename(file.getPath()).equalsIgnoreCase(normalized)) {
-                return Optional.of(file);
+                basenameMatches.add(file);
             }
         }
 
+        if (basenameMatches.size() == 1) {
+            return Optional.of(basenameMatches.get(0));
+        }
+
+        if (basenameMatches.size() > 1) {
+            return Optional.empty();
+        }
+
+        List<FileNode> containsMatches = new ArrayList<>();
         for (FileNode file : files) {
             String pathLower = normalizePath(file.getPath()).toLowerCase(Locale.ROOT);
-            if (pathLower.contains(normLower)) {
-                return Optional.of(file);
+            String relLower = toRelativePath(file.getPath(), repoRoot).toLowerCase(Locale.ROOT);
+            if (pathLower.contains(normLower) || relLower.contains(normLower)) {
+                containsMatches.add(file);
             }
+        }
+
+        if (containsMatches.size() == 1) {
+            return Optional.of(containsMatches.get(0));
         }
 
         return Optional.empty();
+    }
+
+    private String toRelativePath(String filePath, String repoRoot) {
+        String norm = normalizePath(filePath);
+        String root = normalizePath(repoRoot).replaceAll("/$", "");
+        if (root.isEmpty()) {
+            return norm;
+        }
+        String prefix = root.toLowerCase(Locale.ROOT) + "/";
+        if (norm.toLowerCase(Locale.ROOT).startsWith(prefix)) {
+            return norm.substring(root.length() + 1);
+        }
+        return norm;
     }
 
     private String normalizeRef(String ref) {
@@ -89,7 +159,8 @@ public class FileRefService {
         }
         return ref.trim()
                 .replace('\\', '/')
-                .replaceAll("^[@/]+", "");
+                .replaceAll("^[@/]+", "")
+                .replaceAll("^\\./+", "");
     }
 
     private String normalizePath(String path) {
