@@ -18,8 +18,6 @@ Watch a full walkthrough: connect repo → inject with path masking → ChatGPT 
 
 <!-- Step 1: Pick ONE option below and replace the placeholders before you push. -->
 
-### Option A — YouTube (recommended for recruiters)
-
 1. Upload your recording to YouTube (visibility: **Unlisted** is fine).
 2. Copy the video ID from the URL (`youtube.com/watch?v=` **`THIS_PART`**).
 3. Replace `YOUR_VIDEO_ID` in the line below.
@@ -28,28 +26,6 @@ Watch a full walkthrough: connect repo → inject with path masking → ChatGPT 
 
 **Direct link:** `https://www.youtube.com/watch?v=YOUR_VIDEO_ID`
 
-### Option B — GitHub-hosted clip (no YouTube)
-
-1. Open any **Issue** or **Pull Request** in this repo (you can open a draft PR and close it later).
-2. Drag and drop your `.mp4` / `.mov` into the comment box; GitHub uploads it and shows a URL like  
-   `https://github.com/user-attachments/assets/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`.
-3. Paste that URL here:
-
-```markdown
-https://github.com/user-attachments/assets/PASTE_YOUR_ASSET_ID_HERE
-```
-
-Or embed in the README with HTML (works on GitHub):
-
-```html
-<video src="https://github.com/user-attachments/assets/PASTE_YOUR_ASSET_ID_HERE" controls width="100%"></video>
-```
-
-### Option C — Loom or cloud link
-
-[![Watch on Loom](https://img.shields.io/badge/Demo-Loom-625DF5?style=for-the-badge)](https://www.loom.com/share/YOUR_LOOM_ID)
-
-Replace the URL with your share link.
 
 ---
 
