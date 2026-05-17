@@ -247,6 +247,3 @@ If you're reviewing this for a role: the focus is **trust, privacy, and develope
 
 ---
 
-## License
-
-MIT (or adjust before publish if your organization requires a different license).
