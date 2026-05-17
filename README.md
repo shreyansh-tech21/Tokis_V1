@@ -10,7 +10,25 @@ Tokis is a Chrome extension and local service stack that connects a real project
 
 Built for teams that need LLM productivity without giving up control, path privacy, or a clear audit trail of what was applied.
 
-**Evaluate the flow:** written walkthrough and sample repo in [tokis-test/TESTING.md](tokis-test/TESTING.md).
+---
+
+## Demo
+
+**[Watch the demo on YouTube →](https://youtu.be/REPLACE_WITH_YOUR_VIDEO_ID)** *(replace `REPLACE_WITH_YOUR_VIDEO_ID` with your video ID after upload)*
+
+A short walkthrough of the full workflow on the included `tokis-test` sample repo:
+
+| Step | What you will see |
+|------|-------------------|
+| 1 | Connect a local repository via the Tokis FAB |
+| 2 | **Inject prompt** — select files, preview, mask sensitive paths as `MASK1` / `MASK2` |
+| 3 | ChatGPT proposes fixes using `tokis-edit:MASKn` (no guessed paths exposed to the model) |
+| 4 | **Review suggestions** — demask paths, preview real file content, approve selected writes |
+| 5 | Changes applied only to the correct files on disk (approve-before-write) |
+
+**Written walkthrough:** [tokis-test/TESTING.md](tokis-test/TESTING.md) · **Sample repo:** [`tokis-test/`](tokis-test/)
+
+> **For recruiters:** Tokis does not auto-write to your codebase. The extension bridges ChatGPT and a local repo; masking keeps internal paths off the wire until you approve apply on your machine.
 
 ---
 
@@ -168,10 +186,10 @@ javac -d out demo_check.java src/Calculator.java
 java -cp out demo_check
 ```
 
-**Suggested ChatGPT prompt after inject:**
+**Suggested ChatGPT prompt after inject** (mask `---path---` headers first, then inject):
 
 ```text
-Fix the bugs in src/Calculator.java and src/helper.py. Use tokis-edit blocks with real repo paths (e.g. src/Calculator.java). Do not claim files were written until I approve in Tokis.
+Fix the bugs in the injected files. Use tokis-edit with the same MASK tokens as the headers (e.g. tokis-edit:MASK1). Do not claim files were written until I approve in Tokis.
 ```
 
 End-to-end flow (connect → inject → mask → review → apply): [tokis-test/TESTING.md](tokis-test/TESTING.md).
@@ -229,9 +247,10 @@ If you are evaluating this for a role: the near-term bet is **trust + structure*
 
 ## Author
 
-**Shreyansh Karamtot** — built for safe, practical AI-assisted development workflows.
+**Shreyansh Karamtot**
 
-If you're reviewing this for a role: the focus is **trust, privacy, and developer control** when using public LLMs on private codebases—the same constraints teams at scale care about.
+- **Demo:** [YouTube walkthrough](https://youtu.be/REPLACE_WITH_YOUR_VIDEO_ID) *(update link after upload)*
+- **Focus:** Trust, privacy, and developer control when using public LLMs on private codebases—the same constraints teams at scale care about.
 
 ---
 
