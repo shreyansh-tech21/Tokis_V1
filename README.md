@@ -10,27 +10,11 @@ Tokis is a Chrome extension and local service stack that connects a real project
 
 Built for teams that need LLM productivity without giving up control, path privacy, or a clear audit trail of what was applied.
 
----
-
-## Demo video
-
-Watch a full walkthrough: connect repo → inject with path masking → ChatGPT fix → review and apply.
-
-<!-- Step 1: Pick ONE option below and replace the placeholders before you push. -->
-
-1. Upload your recording to YouTube (visibility: **Unlisted** is fine).
-2. Copy the video ID from the URL (`youtube.com/watch?v=` **`THIS_PART`**).
-3. Replace `YOUR_VIDEO_ID` in the line below.
-
-[![Watch the Tokis demo](https://img.youtube.com/vi/YOUR_VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID)
-
-**Direct link:** `https://www.youtube.com/watch?v=YOUR_VIDEO_ID`
-
+**Evaluate the flow:** written walkthrough and sample repo in [tokis-test/TESTING.md](tokis-test/TESTING.md).
 
 ---
 
-> **GitHub “About” box (paste into repo description):**  
-> Privacy-aware ChatGPT workflow for local repos—inject context, mask paths, review AI edits, approve before write.
+> **GitHub About (short description):** Privacy-aware ChatGPT workflow for local repos—inject context, mask paths, review AI edits, approve before write.
 
 ---
 ## Why Tokis exists
@@ -190,20 +174,7 @@ java -cp out demo_check
 Fix the bugs in src/Calculator.java and src/helper.py. Use tokis-edit blocks with real repo paths (e.g. src/Calculator.java). Do not claim files were written until I approve in Tokis.
 ```
 
-Detailed steps: [tokis-test/TESTING.md](tokis-test/TESTING.md)
-
----
-
-## Recording script (~2 minutes)
-
-Use this outline while filming; link the result in [Demo video](#demo-video) above.
-
-1. **Show broken tests** — Run `demo_check.py` / `demo_check.java`; show failures.
-2. **Connect** — Add Project → `tokis-test`.
-3. **Inject** — Inject prompt → select `Calculator.java`, `helper.py` → mask a path in preview → **Continue → inject into chat**.
-4. **ChatGPT** — Send; model returns `tokis-edit` blocks.
-5. **Review** — Review suggestions → show demasked real paths → **Approve selected**.
-6. **Prove fix** — Re-run demo checks; show passing behavior.
+End-to-end flow (connect → inject → mask → review → apply): [tokis-test/TESTING.md](tokis-test/TESTING.md).
 
 ---
 

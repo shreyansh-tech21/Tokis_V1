@@ -98,3 +98,30 @@ After delete, **Add Project** again on `tokis-test` to re-ingest updated files.
 ## Re-ingest after big changes
 
 If you change files on disk outside Tokis: FAB → **Change repo** → **Add Project** again (same folder) to refresh the index.
+
+---
+
+## Recording a demo video (optional)
+
+### Free screen recorders (Windows)
+
+| Tool | Notes |
+|------|--------|
+| **[OBS Studio](https://obsproject.com/)** | Free, industry standard. Display Capture → Start Recording → export `.mp4`. |
+| **Xbox Game Bar** | `Win + G` → capture button. Built into Windows 10/11; fine for quick demos. |
+| **[ShareX](https://getsharex.com/)** | Free; screen recording + easy trim. |
+| **[Clipchamp](https://clipchamp.com/)** | Free tier; browser or app; simple edit and export. |
+
+### Suggested flow (~2 min)
+
+1. Run `demo_check.py` / `demo_check.java` — show failures.
+2. Connect **tokis-test** → **Inject prompt** → mask a path → inject.
+3. ChatGPT fix → **Review suggestions** → **Approve selected**.
+4. Re-run demos — show fixes.
+
+### Publishing (for README / resume)
+
+1. Export **1080p** `.mp4`, keep under ~3 minutes.
+2. Upload **YouTube (Unlisted)** or **Loom**.
+3. Add one line to the root `README.md` under the evaluation line, e.g.  
+   `**Demo video:** [Watch walkthrough](https://youtu.be/YOUR_ID)`
