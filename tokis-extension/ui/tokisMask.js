@@ -107,10 +107,30 @@ function basenameFromPath(filePath) {
   return parts[parts.length - 1] || filePath;
 }
 
+function lookupMaskPathToken(rawPath, tokenMap) {
+  const key = normalizeMaskPath(rawPath);
+  if (!/^MASK\d+$/i.test(key)) return null;
+
+  const upper = key.toUpperCase();
+  for (const [tok, val] of Object.entries(tokenMap || {})) {
+    if (tok.toUpperCase() !== upper) continue;
+    if (isPathLikeText(val)) return normalizeMaskPath(val);
+  }
+  return null;
+}
+
 /**
  * Resolve a possibly corrupted path (MASK1 embedded in filename) using vault + repo index.
  */
 function resolveEditRelativePath(rawPath, tokenMap, repoPaths, repoRoot, pathAliases = {}) {
+  const fromMaskToken = lookupMaskPathToken(rawPath, tokenMap);
+  if (fromMaskToken) {
+    if (repoRoot && typeof normalizeRepoRelativePath === "function") {
+      return normalizeRepoRelativePath(fromMaskToken, repoRoot, repoPaths);
+    }
+    return fromMaskToken;
+  }
+
   let path = demaskText(normalizeMaskPath(rawPath), tokenMap);
   path = normalizeMaskPath(path);
 
@@ -248,7 +268,7 @@ async function resolveEditsForApply(edits, options = {}) {
     if (!rel || hasMaskPlaceholder(rel)) {
       errors.push({
         rawPath: edit.relativePath,
-        message: `Could not resolve file path "${edit.relativePath}". Use the full relative path from context (e.g. src/helper.py), not a bare filename when duplicates exist.`,
+        message: `Could not resolve "${edit.relativePath}". Use the same MASK token from inject (e.g. tokis-edit:MASK1) or the full relative path (e.g. src/helper.py).`,
       });
       continue;
     }
@@ -282,6 +302,8 @@ function maskFileHeaderPath(text, start, end, vault) {
   const innerPath = headerMatch[1];
   const token = allocateMaskToken(vault);
   vault.tokens[token] = innerPath;
+  vault.tokenKinds = vault.tokenKinds || {};
+  vault.tokenKinds[token] = "path";
   vault.pathAliases = vault.pathAliases || {};
   const base = basenameFromPath(innerPath);
   const relPath = normalizeMaskPath(innerPath);
@@ -303,11 +325,20 @@ function appendMaskFooter(body, vault) {
   const entries = listMaskEntries(vault);
   if (!entries.length) return body;
 
+  const pathTokens = entries.filter(([, value]) => isPathLikeText(value));
+  const otherTokens = entries.filter(([, value]) => !isPathLikeText(value));
+
   let footer =
-    "\n\nTokis path placeholders (MASK1, MASK2, …): use only inside file content if needed. In tokis-edit blocks always use real repo paths (e.g. src/Calculator.java), never MASK in the path line.";
-  entries.forEach(([token, value]) => {
-    const label = isPathLikeText(value) ? "path" : "value";
-    footer += `\n- ${token}: (${label} hidden)`;
+    "\n\nTokis masked paths: For each file you change, use ```tokis-edit:MASKn``` with the SAME token as its ---MASKn--- header above.";
+  if (pathTokens.length) {
+    footer +=
+      " Do NOT guess real paths (e.g. src/utils.py). Tokis restores real paths when the user approves in Review.";
+    pathTokens.forEach(([token]) => {
+      footer += `\n- ${token}: use \`\`\`tokis-edit:${token}\`\`\``;
+    });
+  }
+  otherTokens.forEach(([token]) => {
+    footer += `\n- ${token}: masked secret (content only, not for tokis-edit path line)`;
   });
   return body + footer;
 }
@@ -326,6 +357,7 @@ async function saveActiveMaskSet(repoId, vault) {
     repoId: String(repoId || ""),
     tokens: vault.tokens,
     pathAliases: vault.pathAliases || {},
+    tokenKinds: vault.tokenKinds || {},
     savedAt: Date.now(),
   };
 
@@ -360,6 +392,7 @@ async function loadActiveMaskSet() {
     repoId: set.repoId,
     tokens: set.tokens,
     pathAliases: set.pathAliases || {},
+    tokenKinds: set.tokenKinds || {},
   };
 }
 
@@ -367,6 +400,8 @@ function vaultFromActiveSet(activeSet) {
   if (!activeSet?.tokens) return createMaskVault();
   const vault = createMaskVault();
   vault.tokens = { ...activeSet.tokens };
+  vault.pathAliases = { ...(activeSet.pathAliases || {}) };
+  vault.tokenKinds = { ...(activeSet.tokenKinds || {}) };
   let max = 0;
   for (const key of Object.keys(vault.tokens)) {
     const m = /^MASK(\d+)$/.exec(key);
@@ -435,7 +470,7 @@ function showMaskPreviewModal(options) {
     ? `
   <div class="tokis-mask-toolbar">
     <button type="button" id="tokis-mask-selection" class="tokis-fab-action">Mask path / selection</button>
-    <p class="tokis-context-hint tokis-mask-hint">Mask a folder path or a ---file path--- line. Tokis restores real paths on Review; never writes MASK1.java to disk.</p>
+    <p class="tokis-context-hint tokis-mask-hint">Mask a ---file path--- line (becomes MASK1, MASK2…). Tell the model to reply with tokis-edit:MASK1 — Tokis restores the real path on Review.</p>
     <div id="tokis-mask-list" class="tokis-mask-list-wrap">${renderMaskListHtml(vault)}</div>
   </div>`
     : "";

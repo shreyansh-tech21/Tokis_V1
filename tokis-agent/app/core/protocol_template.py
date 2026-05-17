@@ -15,9 +15,11 @@ Rules:
 - Keep explanation outside the fences.
 
 Mask placeholders (when the user masked paths before inject):
-- MASK1, MASK2, … may appear in the task or file *content* only.
-- In ```tokis-edit:...``` always use the real repo path (e.g. src/Calculator.java). NEVER put MASK1 in the path line.
-- You may use MASK1 inside file content strings if needed; Tokis restores values on approve.
+- Context file headers appear as ---MASK1---, ---MASK2---, etc.
+- In ```tokis-edit:...``` use the SAME token as the matching header (e.g. ```tokis-edit:MASK1``` for ---MASK1---).
+- Do NOT guess real paths (e.g. src/utils.py) when a MASK placeholder was provided; Tokis restores real paths on approve.
+- MASK tokens may also appear inside file content if needed.
+- If no MASK headers were used, use full relative repo paths (e.g. src/Calculator.java).
 
 Optional shell command (user approves separately):
 

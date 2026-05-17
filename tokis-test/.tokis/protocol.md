@@ -14,6 +14,10 @@ When proposing changes to the connected repository:
 
 4. Keep prose outside fences; put code only inside tokis-edit blocks.
 
+Masked paths (---MASK1--- headers in context):
+- Use the same token in the fence: ```tokis-edit:MASK1``` (not a guessed path like src/utils.py).
+- Tokis maps MASK tokens to real files when the user approves in Review.
+
 Optional shell command (user must approve separately):
 
 ```tokis-run

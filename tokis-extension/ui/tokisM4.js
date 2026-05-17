@@ -157,7 +157,7 @@ function buildPromptWithTokis(task, snippets, repoRoot) {
     const pathLabel = snippetDisplayPath(s, repoRoot);
     body += `\n---${pathLabel}---\n${capped.text}\n`;
   });
-  body += `\nTokis: Follow \`.tokis/protocol.md\`. For each changed file use \`\`\`tokis-edit:relative/path\`\`\` with the full relative path shown above (e.g. src/helper.py, not helper.py alone). Never MASK in the path line. MASK1, MASK2 may appear only inside file content if needed.`;
+  body += `\nTokis: Follow \`.tokis/protocol.md\`. For each changed file use \`\`\`tokis-edit:path\`\`\` — same label as each ---header--- above (e.g. \`\`\`tokis-edit:src/helper.py\`\`\`, or \`\`\`tokis-edit:MASK1\`\`\` if you mask paths in preview). Do not guess filenames.`;
   return truncateForChat(body, TOKIS_CHAT_INJECT_MAX).text;
 }
 
@@ -434,7 +434,7 @@ async function openReviewEditsPopup(edits) {
 
   if (resolveErrors.length) {
     alert(
-      `Some paths could not be resolved:\n\n${resolveErrors.map((e) => `• ${e.rawPath}: ${e.message}`).join("\n")}\n\nAsk the model to use real paths in tokis-edit (e.g. src/Calculator.java), not MASK in filenames.`,
+      `Some paths could not be resolved:\n\n${resolveErrors.map((e) => `• ${e.rawPath}: ${e.message}`).join("\n")}\n\nAsk the model to use the same MASK token from inject (e.g. tokis-edit:MASK1) or the exact relative path from context.`,
     );
     if (!editsForApply.length) return;
   }
@@ -446,7 +446,7 @@ async function openReviewEditsPopup(edits) {
   popup.id = "tokis-popup";
 
   const maskNote = hasMasks
-    ? '<p class="tokis-context-hint">Paths and content restored from MASK tokens (writes to real files like src/Calculator.java).</p>'
+    ? '<p class="tokis-context-hint">MASK tokens in replies are mapped to real repo paths before write (e.g. MASK1 → src/helper.py).</p>'
     : "";
 
   const listHtml = editsForApply
@@ -534,14 +534,14 @@ function showReviewSuggestionsModal() {
     showPreviewEditorModal({
       title: "Review suggestions",
       hint:
-        "Auto-parse failed (common with ChatGPT headings). Paste the reply below — include lines like tokis-edit:src/Calculator.java above each code block — then click Parse edits.",
+        "Auto-parse failed (common with ChatGPT headings). Paste the reply below — include lines like tokis-edit:MASK1 or tokis-edit:src/Calculator.java above each code block — then click Parse edits.",
       content: assistantText,
       confirmLabel: "Parse edits",
       onConfirm: (text) => {
         const parsed = parseTokisEdits(text);
         if (!parsed.length) {
           alert(
-            "No edits found. Each file needs a line: tokis-edit:src/yourfile.java then the full file content.",
+            "No edits found. Each file needs a line: tokis-edit:MASK1 or tokis-edit:src/yourfile.java then the full file content.",
           );
           return;
         }
